@@ -4,7 +4,7 @@ from telegram import Bot, Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.error import TelegramError
 
-import config
+from .. import config
 
 
 class TelegramChannel:
@@ -40,44 +40,100 @@ class TelegramChannel:
         except TelegramError as e:
             return f"Failed to retrieve messages: {str(e)}"
 
-def push_email(msg, kind):
-    """Push a Gmail message to the configured Telegram user.
+    @staticmethod
+    def push_email(msg, kind):
+        """Push a Gmail message to the configured Telegram user.
 
-    Parameters
-    ----------
-    msg : dict
-        Message object returned by the Gmail API.
-    kind : str
-        Classification of the email (unused).
-    """
+        Parameters
+        ----------
+        msg : dict
+            Message object returned by the Gmail API.
+        kind : str
+            Classification of the email (unused).
 
-    headers = {
-        h.get("name"): h.get("value")
-        for h in msg.get("payload", {}).get("headers", [])
-        if isinstance(h, dict)
-    }
-    subject = headers.get("Subject", "(no subject)")
-    from_addr = headers.get("From", "(unknown)")
+        headers = {
+            h.get("name"): h.get("value")
+            for h in msg.get("payload", {}).get("headers", [])
+            if isinstance(h, dict)
+        }
+        subject = headers.get("Subject", "(no subject)")
+        from_addr = headers.get("From", "(unknown)")
 
-    body = msg.get("snippet", "")[:200]
-    md = f"*{subject}* \u00b7 _{from_addr}_ \u00b7 {body}"
+        body = msg.get("snippet", "")[:200]
+        md = f"*{subject}* \u00b7 _{from_addr}_ \u00b7 {body}"
 
-    buttons = [
-        [InlineKeyboardButton("Draft Reply", callback_data=f"draft:{msg.get('id')}")]
-    ]
+        buttons = [
+            [InlineKeyboardButton("Draft Reply", callback_data=f"draft:{msg.get('id')}")]
+        ]
 
-    parts = msg.get("payload", {}).get("parts", [])
-    if any(p.get("mimeType") == "text/calendar" for p in parts):
-        buttons.append([
-            InlineKeyboardButton("Yes", callback_data=f"rsvp:{msg.get('id')}:yes"),
-            InlineKeyboardButton("No", callback_data=f"rsvp:{msg.get('id')}:no"),
-            InlineKeyboardButton("Maybe", callback_data=f"rsvp:{msg.get('id')}:maybe"),
-        ])
+        parts = msg.get("payload", {}).get("parts", [])
+        if any(p.get("mimeType") == "text/calendar" for p in parts):
+            buttons.append([
+                InlineKeyboardButton("Yes", callback_data=f"rsvp:{msg.get('id')}:yes"),
+                InlineKeyboardButton("No", callback_data=f"rsvp:{msg.get('id')}:no"),
+                InlineKeyboardButton("Maybe", callback_data=f"rsvp:{msg.get('id')}:maybe"),
+            ])
 
     ikb = InlineKeyboardMarkup(buttons)
     bot = Bot(token=os.getenv("TELEGRAM_TOKEN"))
     bot.send_message(chat_id=config.USER_ID, text=md, reply_markup=ikb)
 
 
-# Provide ``push_email`` as a class-level method for easy patching in tests
+# Expose ``push_email`` as a static method for compatibility with callers
 TelegramChannel.push_email = staticmethod(push_email)
+
+def handle_draft(update: Update, context) -> None:
+    """Handle a "draft" callback query from Telegram."""
+
+    update.callback_query.answer()
+    msg_id = update.callback_query.data.split(":", 1)[1]
+    update.callback_query.message.reply_text(
+        f"Drafting reply for message {msg_id}."
+    )
+
+
+def handle_send(update: Update, context) -> None:
+    """Handle a "send" callback query from Telegram."""
+
+    update.callback_query.answer()
+    update.callback_query.message.reply_text("Sending your reply…")
+
+
+def handle_discard(update: Update, context) -> None:
+    """Handle a "discard" callback query from Telegram."""
+
+    update.callback_query.answer()
+    update.callback_query.message.reply_text("Draft discarded.")
+
+
+def handle_rsvp(update: Update, context) -> None:
+    """Handle an RSVP callback query from Telegram."""
+
+    update.callback_query.answer()
+    parts = update.callback_query.data.split(":", 2)
+    if len(parts) == 3:
+        _, msg_id, response = parts
+    else:
+        msg_id, response = "", ""
+    reply = response.capitalize() if response else ""
+    update.callback_query.message.reply_text(
+        f"RSVP {reply} recorded for event {msg_id}."
+    )
+
+
+def handle_callback(update: Update, context) -> None:
+    """Dispatch callback queries to their respective handlers."""
+
+    if not update.callback_query:
+        return
+
+    data = update.callback_query.data or ""
+
+    if data.startswith("draft:"):
+        handle_draft(update, context)
+    elif data.startswith("send:"):
+        handle_send(update, context)
+    elif data.startswith("discard:"):
+        handle_discard(update, context)
+    elif data.startswith("rsvp:"):
+        handle_rsvp(update, context)
