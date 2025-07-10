@@ -22,3 +22,5 @@ selenium
 webdriver_manager
 html2text
 bs4
+langchain-core
+pytest-asyncio

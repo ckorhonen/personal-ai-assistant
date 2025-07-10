@@ -40,7 +40,6 @@ class TelegramChannel:
         except TelegramError as e:
             return f"Failed to retrieve messages: {str(e)}"
 
-
 def push_email(msg, kind):
     """Push a Gmail message to the configured Telegram user.
 
