@@ -138,6 +138,7 @@ All the sub-agents report back to the Assistant Manager after completing their r
 ## Contribution
 
 Feel free to fork the repository, create a branch, and submit a pull request if you'd like to contribute to the project.
+All pull requests will automatically run the test suite via GitHub Actions.
 
 ## Contact
 
