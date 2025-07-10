@@ -44,13 +44,12 @@ class TelegramChannel:
     def push_email(msg, kind):
         """Push a Gmail message to the configured Telegram user.
 
-    Parameters
-    ----------
-    msg : dict
-        Message object returned by the Gmail API.
-    kind : str
-        Classification of the email (unused).
-    """
+        Parameters
+        ----------
+        msg : dict
+            Message object returned by the Gmail API.
+        kind : str
+            Classification of the email (unused).
 
         headers = {
             h.get("name"): h.get("value")
@@ -82,3 +81,59 @@ class TelegramChannel:
 
 # Expose ``push_email`` as a static method for compatibility with callers
 TelegramChannel.push_email = staticmethod(push_email)
+
+def handle_draft(update: Update, context) -> None:
+    """Handle a "draft" callback query from Telegram."""
+
+    update.callback_query.answer()
+    msg_id = update.callback_query.data.split(":", 1)[1]
+    update.callback_query.message.reply_text(
+        f"Drafting reply for message {msg_id}."
+    )
+
+
+def handle_send(update: Update, context) -> None:
+    """Handle a "send" callback query from Telegram."""
+
+    update.callback_query.answer()
+    update.callback_query.message.reply_text("Sending your reply…")
+
+
+def handle_discard(update: Update, context) -> None:
+    """Handle a "discard" callback query from Telegram."""
+
+    update.callback_query.answer()
+    update.callback_query.message.reply_text("Draft discarded.")
+
+
+def handle_rsvp(update: Update, context) -> None:
+    """Handle an RSVP callback query from Telegram."""
+
+    update.callback_query.answer()
+    parts = update.callback_query.data.split(":", 2)
+    if len(parts) == 3:
+        _, msg_id, response = parts
+    else:
+        msg_id, response = "", ""
+    reply = response.capitalize() if response else ""
+    update.callback_query.message.reply_text(
+        f"RSVP {reply} recorded for event {msg_id}."
+    )
+
+
+def handle_callback(update: Update, context) -> None:
+    """Dispatch callback queries to their respective handlers."""
+
+    if not update.callback_query:
+        return
+
+    data = update.callback_query.data or ""
+
+    if data.startswith("draft:"):
+        handle_draft(update, context)
+    elif data.startswith("send:"):
+        handle_send(update, context)
+    elif data.startswith("discard:"):
+        handle_discard(update, context)
+    elif data.startswith("rsvp:"):
+        handle_rsvp(update, context)

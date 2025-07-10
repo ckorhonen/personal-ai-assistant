@@ -1,1 +1,4 @@
-USER_ID = 0
+import os
+
+USER_ID = os.getenv("CHAT_ID", "0")
+
