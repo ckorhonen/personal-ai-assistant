@@ -111,10 +111,10 @@ All the sub-agents report back to the Assistant Manager after completing their r
       python app.py
       ```
 
-    - For running the personal assistant on **whatsApp** you'll need to run:
+      - For running the personal assistant on **whatsApp** you'll need to run:
 
       ```bash
-      python run app_whatsapp.py
+      python app_whatsapp.py
       ```
 
       This will spin out a local fastAPI server, to enable the communication with the Twilio servers you need to make it public using **Ngrok**:
@@ -142,3 +142,5 @@ Feel free to fork the repository, create a branch, and submit a pull request if 
 ## Contact
 
 For any queries or suggestions, please reach out to [aymenMir1001@gmail.com](mailto:aymenMir1001@gmail.com)
+
+See AGENTS.md for development guidelines.
