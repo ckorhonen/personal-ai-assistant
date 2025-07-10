@@ -4,7 +4,7 @@ from telegram import Bot, Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.error import TelegramError
 
-import config
+from .. import config
 
 
 class TelegramChannel:
@@ -50,7 +50,6 @@ class TelegramChannel:
             Message object returned by the Gmail API.
         kind : str
             Classification of the email (unused).
-        """
 
         headers = {
             h.get("name"): h.get("value")
@@ -78,7 +77,6 @@ class TelegramChannel:
         ikb = InlineKeyboardMarkup(buttons)
         bot = Bot(token=os.getenv("TELEGRAM_TOKEN"))
         bot.send_message(chat_id=config.USER_ID, text=md, reply_markup=ikb)
-
 
 def handle_draft(update: Update, context) -> None:
     """Handle a "draft" callback query from Telegram."""
