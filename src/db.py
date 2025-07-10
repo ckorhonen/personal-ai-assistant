@@ -1,7 +1,7 @@
 """Simple SQLite-based key-value store for application state."""
 
 import sqlite3
-from typing import Optional
+from typing import Iterable, Optional
 
 
 class SqliteKV:
@@ -52,8 +52,30 @@ class SqliteKV:
 
     def set(self, key: str, value: str) -> None:
         """Store ``value`` for ``key`` in the database."""
-        self.conn.execute(
-            "REPLACE INTO state(key, value) VALUES(?, ?)",
-            (key, value),
-        )
-        self.conn.commit()
+        cur = self.conn.cursor()
+        try:
+            cur.execute(
+                "REPLACE INTO state(key, value) VALUES(?, ?)",
+                (key, value),
+            )
+            self.conn.commit()
+        except sqlite3.DatabaseError:
+            self.conn.rollback()
+            raise
+        finally:
+            cur.close()
+
+    def set_many(self, items: Iterable[tuple[str, str]]):
+        """Insert multiple ``(key, value)`` pairs in a single transaction."""
+        cur = self.conn.cursor()
+        try:
+            cur.executemany(
+                "REPLACE INTO state(key, value) VALUES(?, ?)",
+                items,
+            )
+            self.conn.commit()
+        except sqlite3.DatabaseError:
+            self.conn.rollback()
+            raise
+        finally:
+            cur.close()

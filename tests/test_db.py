@@ -16,3 +16,14 @@ def test_set_get(tmp_path):
     kv.set("foo", "bar")
     assert kv.get("foo") == "bar"
     assert kv.get("missing", "default") == "default"
+
+
+def test_set_many(tmp_path):
+    db_file = tmp_path / "assistant.db"
+    kv = SqliteKV(str(db_file))
+
+    items = [("a", "1"), ("b", "2"), ("c", "3")]
+    kv.set_many(items)
+
+    for key, val in items:
+        assert kv.get(key) == val
