@@ -27,6 +27,18 @@ class SqliteKV:
         self.conn.commit()
         self._ensure_seed()
 
+    def __enter__(self) -> "SqliteKV":
+        """Enter the runtime context related to this object."""
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        """Close the connection when leaving the context."""
+        self.close()
+
+    def close(self) -> None:
+        """Close the underlying SQLite connection."""
+        self.conn.close()
+
     def _ensure_seed(self) -> None:
         """Insert the default ``last_history_id`` row if missing."""
         cur = self.conn.cursor()
