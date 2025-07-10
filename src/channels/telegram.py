@@ -4,7 +4,7 @@ from telegram import Bot, Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.error import TelegramError
 
-import config
+from .. import config
 
 
 class TelegramChannel:
@@ -40,8 +40,9 @@ class TelegramChannel:
         except TelegramError as e:
             return f"Failed to retrieve messages: {str(e)}"
 
-def push_email(msg, kind):
-    """Push a Gmail message to the configured Telegram user.
+    @staticmethod
+    def push_email(msg, kind):
+        """Push a Gmail message to the configured Telegram user.
 
     Parameters
     ----------
@@ -51,28 +52,28 @@ def push_email(msg, kind):
         Classification of the email (unused).
     """
 
-    headers = {
-        h.get("name"): h.get("value")
-        for h in msg.get("payload", {}).get("headers", [])
-        if isinstance(h, dict)
-    }
-    subject = headers.get("Subject", "(no subject)")
-    from_addr = headers.get("From", "(unknown)")
+        headers = {
+            h.get("name"): h.get("value")
+            for h in msg.get("payload", {}).get("headers", [])
+            if isinstance(h, dict)
+        }
+        subject = headers.get("Subject", "(no subject)")
+        from_addr = headers.get("From", "(unknown)")
 
-    body = msg.get("snippet", "")[:200]
-    md = f"*{subject}* \u00b7 _{from_addr}_ \u00b7 {body}"
+        body = msg.get("snippet", "")[:200]
+        md = f"*{subject}* \u00b7 _{from_addr}_ \u00b7 {body}"
 
-    buttons = [
-        [InlineKeyboardButton("Draft Reply", callback_data=f"draft:{msg.get('id')}")]
-    ]
+        buttons = [
+            [InlineKeyboardButton("Draft Reply", callback_data=f"draft:{msg.get('id')}")]
+        ]
 
-    parts = msg.get("payload", {}).get("parts", [])
-    if any(p.get("mimeType") == "text/calendar" for p in parts):
-        buttons.append([
-            InlineKeyboardButton("Yes", callback_data=f"rsvp:{msg.get('id')}:yes"),
-            InlineKeyboardButton("No", callback_data=f"rsvp:{msg.get('id')}:no"),
-            InlineKeyboardButton("Maybe", callback_data=f"rsvp:{msg.get('id')}:maybe"),
-        ])
+        parts = msg.get("payload", {}).get("parts", [])
+        if any(p.get("mimeType") == "text/calendar" for p in parts):
+            buttons.append([
+                InlineKeyboardButton("Yes", callback_data=f"rsvp:{msg.get('id')}:yes"),
+                InlineKeyboardButton("No", callback_data=f"rsvp:{msg.get('id')}:no"),
+                InlineKeyboardButton("Maybe", callback_data=f"rsvp:{msg.get('id')}:maybe"),
+            ])
 
     ikb = InlineKeyboardMarkup(buttons)
     bot = Bot(token=os.getenv("TELEGRAM_TOKEN"))
