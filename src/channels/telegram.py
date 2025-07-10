@@ -1,10 +1,17 @@
 import os
 import asyncio
+import base64
+import sqlite3
+from email.mime.text import MIMEText
+
+from googleapiclient.discovery import build
 from telegram import Bot, Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.error import TelegramError
 
 from .. import config
+from ..utils import get_credentials
+from ..tools import email as email_utils
 
 
 class TelegramChannel:
@@ -50,6 +57,7 @@ class TelegramChannel:
             Message object returned by the Gmail API.
         kind : str
             Classification of the email (unused).
+        """
 
         headers = {
             h.get("name"): h.get("value")
@@ -74,36 +82,105 @@ class TelegramChannel:
                 InlineKeyboardButton("Maybe", callback_data=f"rsvp:{msg.get('id')}:maybe"),
             ])
 
-    ikb = InlineKeyboardMarkup(buttons)
-    bot = Bot(token=os.getenv("TELEGRAM_TOKEN"))
-    bot.send_message(chat_id=config.USER_ID, text=md, reply_markup=ikb)
+        ikb = InlineKeyboardMarkup(buttons)
+        bot = Bot(token=os.getenv("TELEGRAM_TOKEN"))
+        bot.send_message(chat_id=config.USER_ID, text=md, reply_markup=ikb)
 
 
-# Expose ``push_email`` as a static method for compatibility with callers
-TelegramChannel.push_email = staticmethod(push_email)
 
 def handle_draft(update: Update, context) -> None:
     """Handle a "draft" callback query from Telegram."""
 
     update.callback_query.answer()
     msg_id = update.callback_query.data.split(":", 1)[1]
-    update.callback_query.message.reply_text(
-        f"Drafting reply for message {msg_id}."
+
+    creds = get_credentials()
+    service = build("gmail", "v1", credentials=creds)
+    msg = (
+        service.users()
+        .messages()
+        .get(userId="me", id=msg_id, format="full")
+        .execute()
     )
+    draft_text = email_utils.generate_reply(msg)
+
+    orig_text = update.callback_query.message.text or ""
+    new_text = f"{orig_text}\n--- Draft ---\n{draft_text}"
+
+    keyboard = InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("Send ✅", callback_data=f"send:{msg_id}"),
+                InlineKeyboardButton(
+                    "Discard ❌", callback_data=f"discard:{msg_id}"
+                ),
+            ]
+        ]
+    )
+
+    update.callback_query.message.edit_text(new_text, reply_markup=keyboard)
 
 
 def handle_send(update: Update, context) -> None:
     """Handle a "send" callback query from Telegram."""
 
     update.callback_query.answer()
-    update.callback_query.message.reply_text("Sending your reply…")
+    msg_id = update.callback_query.data.split(":", 1)[1]
+
+    conn = sqlite3.connect("assistant.db")
+    cur = conn.execute(
+        "SELECT text FROM drafts WHERE gmail_id=?", (msg_id,)
+    )
+    row = cur.fetchone()
+    cur.close()
+    draft_text = row[0] if row else ""
+
+    creds = get_credentials()
+    service = build("gmail", "v1", credentials=creds)
+    msg = (
+        service.users()
+        .messages()
+        .get(userId="me", id=msg_id, format="full")
+        .execute()
+    )
+
+    headers = {
+        h.get("name"): h.get("value")
+        for h in msg.get("payload", {}).get("headers", [])
+        if isinstance(h, dict)
+    }
+    to_addr = headers.get("From", "")
+    subject = "Re: " + headers.get("Subject", "")
+    thread_id = msg.get("threadId")
+
+    mime = MIMEText(draft_text)
+    mime["To"] = to_addr
+    mime["Subject"] = subject
+    raw = base64.urlsafe_b64encode(mime.as_bytes()).decode()
+
+    service.users().messages().send(
+        userId="me", body={"raw": raw, "threadId": thread_id}
+    ).execute()
+
+    conn.execute("DELETE FROM drafts WHERE gmail_id=?", (msg_id,))
+    conn.commit()
+    conn.close()
+
+    update.callback_query.message.edit_text("Sent ✅")
 
 
 def handle_discard(update: Update, context) -> None:
     """Handle a "discard" callback query from Telegram."""
 
     update.callback_query.answer()
-    update.callback_query.message.reply_text("Draft discarded.")
+    msg_id = update.callback_query.data.split(":", 1)[1]
+
+    conn = sqlite3.connect("assistant.db")
+    conn.execute("DELETE FROM drafts WHERE gmail_id=?", (msg_id,))
+    conn.commit()
+    conn.close()
+
+    update.callback_query.message.edit_text("Draft discarded.")
 
 
 def handle_rsvp(update: Update, context) -> None:
@@ -115,9 +192,23 @@ def handle_rsvp(update: Update, context) -> None:
         _, msg_id, response = parts
     else:
         msg_id, response = "", ""
-    reply = response.capitalize() if response else ""
-    update.callback_query.message.reply_text(
-        f"RSVP {reply} recorded for event {msg_id}."
+
+    status = {
+        "yes": "accepted",
+        "no": "declined",
+        "maybe": "tentative",
+    }.get(response, "tentative")
+
+    creds = get_credentials()
+    service = build("calendar", "v3", credentials=creds)
+    service.events().patch(
+        calendarId="primary",
+        eventId=msg_id,
+        body={"responseStatus": status},
+    ).execute()
+
+    update.callback_query.message.edit_text(
+        f"Responded: {response.capitalize()}"
     )
 
 
