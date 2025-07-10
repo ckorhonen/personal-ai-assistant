@@ -140,8 +140,12 @@ All the sub-agents report back to the Assistant Manager after completing their r
 Feel free to fork the repository, create a branch, and submit a pull request if you'd like to contribute to the project.
 All pull requests will automatically run the test suite via GitHub Actions.
 
+## Credits
+
+This project is adapted from [Aymen Mir's AI Personal Assistant](https://github.com/kaymen99/AI-personal-assistant). We thank Aymen for open-sourcing the original implementation.
+
 ## Contact
 
-For any queries or suggestions, please reach out to [aymenMir1001@gmail.com](mailto:aymenMir1001@gmail.com)
+For any queries or suggestions, please reach out to [assistant@v1be.codes](mailto:assistant@v1be.codes)
 
 See AGENTS.md for development guidelines.
