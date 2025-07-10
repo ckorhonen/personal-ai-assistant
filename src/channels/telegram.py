@@ -77,3 +77,7 @@ def push_email(msg, kind):
     ikb = InlineKeyboardMarkup(buttons)
     bot = Bot(token=os.getenv("TELEGRAM_TOKEN"))
     bot.send_message(chat_id=config.USER_ID, text=md, reply_markup=ikb)
+
+
+# Provide ``push_email`` as a class-level method for easy patching in tests
+TelegramChannel.push_email = staticmethod(push_email)
