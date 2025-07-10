@@ -24,3 +24,4 @@ html2text
 bs4
 langchain-core
 pytest-asyncio
+apscheduler
