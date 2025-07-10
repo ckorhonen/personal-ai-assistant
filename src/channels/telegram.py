@@ -37,3 +37,15 @@ class TelegramChannel:
             return new_messages
         except TelegramError as e:
             return f"Failed to retrieve messages: {str(e)}"
+
+    @staticmethod
+    def push_email(msg, kind):
+        """Send a formatted email notification via Telegram."""
+        headers = {
+            h.get("name"): h.get("value")
+            for h in msg.get("payload", {}).get("headers", [])
+            if isinstance(h, dict)
+        }
+        subject = headers.get("Subject", "(no subject)")
+        body = f"*{kind.upper()} email*\n{subject}"
+        TelegramChannel().send_message(body)
