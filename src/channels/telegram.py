@@ -74,9 +74,13 @@ class TelegramChannel:
                 InlineKeyboardButton("Maybe", callback_data=f"rsvp:{msg.get('id')}:maybe"),
             ])
 
-        ikb = InlineKeyboardMarkup(buttons)
-        bot = Bot(token=os.getenv("TELEGRAM_TOKEN"))
-        bot.send_message(chat_id=config.USER_ID, text=md, reply_markup=ikb)
+    ikb = InlineKeyboardMarkup(buttons)
+    bot = Bot(token=os.getenv("TELEGRAM_TOKEN"))
+    bot.send_message(chat_id=config.USER_ID, text=md, reply_markup=ikb)
+
+
+# Expose ``push_email`` as a static method for compatibility with callers
+TelegramChannel.push_email = staticmethod(push_email)
 
 def handle_draft(update: Update, context) -> None:
     """Handle a "draft" callback query from Telegram."""

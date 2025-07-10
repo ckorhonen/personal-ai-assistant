@@ -1,3 +1,4 @@
 import os
 
-USER_ID = os.getenv("CHAT_ID", "")
+USER_ID = os.getenv("CHAT_ID", "0")
+
