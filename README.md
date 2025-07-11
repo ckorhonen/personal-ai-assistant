@@ -159,6 +159,21 @@ To use **Cloudflare D1** later, set `APP_DB_BACKEND` to your D1 connection strin
       
       **You're done now you can talk with your assistant via whatsApp**
 
+## Docker
+
+Build the Docker image locally:
+
+```bash
+docker build -t personal-assistant .
+```
+
+Copy your `.env` file and any credentials like `credentials.json` into the
+project directory, then run the container:
+
+```bash
+docker run --env-file .env personal-assistant
+```
+
 ### Usage
 
 **Communicating with the Assistant**: Simply send a message to your configured communication channel (Telegram, Slack channel, or WhatsApp), and the assistant will analyze the message, delegate the tasks to the appropriate sub-agents, and report back to you with the results.
