@@ -12,6 +12,22 @@ This project provides a personal assistant agent that manages tasks related to y
 
 The personal assistant is a **hierarchical multi-agents** system with a **supervisor agent** (manager) and several sub-agents that handle specific tasks and tools for efficient task management.
 
+## Quick Start
+
+1. Copy `.env.example` to `.env` and set your **Telegram bot token** in `TELEGRAM_TOKEN`.
+2. Download your Gmail OAuth credentials and save the JSON file as `credentials.json` in the project root.
+3. Install dependencies:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. Run the assistant:
+
+   ```bash
+   python app.py
+   ```
+
 ## Overview
 
 ### Main Agent: Assistant Manager
@@ -84,6 +100,18 @@ All the sub-agents report back to the Assistant Manager after completing their r
 4.  **Set up environment variables:**
 
     Create a `.env` file in the root directory of the project and add your API keys, see `.env.example` to know all the parameters you will need.
+
+### Environment variables
+
+| Name | Description |
+| ---- | ----------- |
+| `OPENAI_API_KEY` | API key for your preferred LLM provider. |
+| `TELEGRAM_TOKEN` | Token for your Telegram bot. |
+| `GMAIL_MAIL` | Gmail address used by the assistant. |
+| `GMAIL_APP_PASSWORD` | App password or OAuth token for Gmail. |
+| `APP_DB_BACKEND` | Database URL, default `sqlite:///db/checkpoints.sqlite`. |
+
+To use **Cloudflare D1** later, set `APP_DB_BACKEND` to your D1 connection string.
 
 5.  **Configure Google API credentials:**
 
