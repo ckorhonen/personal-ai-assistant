@@ -21,7 +21,7 @@ def test_set_many(tmp_path):
     db_file = tmp_path / "assistant.db"
     with SqliteKV(str(db_file)) as kv:
         items = [("a", "1"), ("b", "2"), ("c", "3")]
-        kv.set_many(items)
+        kv.transaction(items)
 
         for key, val in items:
             assert kv.get(key) == val

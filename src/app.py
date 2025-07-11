@@ -3,7 +3,7 @@ import time
 from apscheduler.schedulers.background import BackgroundScheduler
 from googleapiclient.discovery import build
 
-from .db import SqliteKV
+from .db import get_db
 from .channels.telegram import TelegramChannel
 from .email_utils import classify_importance
 from .tools.email import fetch_new_messages
@@ -12,7 +12,7 @@ from . import digest
 
 # Globals initialised in ``main``
 gmail_service = None
-db = SqliteKV()
+db = get_db()
 scheduler = BackgroundScheduler()
 
 

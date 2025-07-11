@@ -1,10 +1,30 @@
-"""Simple SQLite-based key-value store for application state."""
+"""Key-value store implementations for application state."""
 
+import os
 import sqlite3
+from abc import ABC, abstractmethod
 from typing import Iterable, Optional
 
+from .config import APP_DB_BACKEND
 
-class SqliteKV:
+
+class KVStore(ABC):
+    """Abstract key-value store interface."""
+
+    @abstractmethod
+    def get(self, key: str, default: Optional[str] = None) -> Optional[str]:
+        """Retrieve ``key`` from the store."""
+
+    @abstractmethod
+    def set(self, key: str, value: str) -> None:
+        """Persist ``value`` under ``key``."""
+
+    @abstractmethod
+    def transaction(self, items: Iterable[tuple[str, str]]) -> None:
+        """Atomically store multiple ``(key, value)`` pairs."""
+
+
+class SqliteKV(KVStore):
     """Key-value storage backed by an SQLite database."""
 
     def __init__(self, db_path: str = "assistant.db") -> None:
@@ -77,7 +97,7 @@ class SqliteKV:
         finally:
             cur.close()
 
-    def set_many(self, items: Iterable[tuple[str, str]]):
+    def transaction(self, items: Iterable[tuple[str, str]]) -> None:
         """Insert multiple ``(key, value)`` pairs in a single transaction."""
         cur = self.conn.cursor()
         try:
@@ -91,3 +111,28 @@ class SqliteKV:
             raise
         finally:
             cur.close()
+
+
+class CloudflareD1KV(KVStore):
+    """Placeholder for a Cloudflare D1-backed key-value store."""
+
+    def __init__(self, *_, **__):
+        pass
+
+    def get(self, key: str, default: Optional[str] = None) -> Optional[str]:
+        raise NotImplementedError
+
+    def set(self, key: str, value: str) -> None:
+        raise NotImplementedError
+
+    def transaction(self, items: Iterable[tuple[str, str]]) -> None:
+        raise NotImplementedError
+
+
+def get_db() -> KVStore:
+    """Create a ``KVStore`` instance based on ``APP_DB_BACKEND``."""
+
+    backend = APP_DB_BACKEND.lower()
+    if backend == "d1":
+        return CloudflareD1KV()
+    return SqliteKV()
