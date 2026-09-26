@@ -29,9 +29,9 @@ This repository contains a multi-agent personal assistant built with LangGraph a
    pip install -r requirements.txt
    ```
 
-2. Copy `.env.example` to `.env` and fill in all required credentials (LLM keys, Google credentials, communication channel tokens…).
+2. Create a local `.env` from `.env.example` only when the task needs a configured runtime. Use the existing secure credential source; never request, print, or commit secret values.
 
-3. For Google APIs place `credentials.json` in the project root and run the application once to generate `token.json`.
+3. Google credentials and generated `token.json` are local secrets. Do not add them to source control or use a live channel simply to validate a code change.
 
 4. Run the Telegram/Slack version with:
 
@@ -50,4 +50,5 @@ This repository contains a multi-agent personal assistant built with LangGraph a
 ## Additional notes
 
 - No automated tests are provided, so please test any changes manually.
-- The SQLite database under `db/` stores conversation checkpoints.  Remove it if you want to start with a fresh agent memory.
+- The SQLite database under `db/` stores conversation checkpoints. Preserve it unless a task explicitly authorizes resetting local conversation state.
+- Use the smallest useful local check for an authorized code change. Starting Slack, Telegram, WhatsApp, or a tunnel can consume or transmit real messages, so do not use those channels merely as low-level validation and report that behavior separately from local validation.
